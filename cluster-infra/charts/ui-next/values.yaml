@@ -1,0 +1,143 @@
+# Default values for ui-next.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enables healthcheck toggle (on/off).
+livenessProbe: false
+readinessProbe: false
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/my-gcp-project-id/ui-next
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "0.1.21"
+
+imagePullSecrets: 
+  - name: "regcred"
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+env:
+  - name: SCHEMA
+    value: "mycompany"
+  - name: PORT
+    value: "3000"
+  - name: NEXT_PUBLIC_API_BASE_URL
+    value: https://example.com/api
+  - name: NEXT_PUBLIC_IMAGEKIT_URL
+    value: https://example.com/staging
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+  - name: REDIS_HOST
+    valueFrom:
+      secretKeyRef:
+        name: redis
+        key: REDIS_HOST
+  - name: REDIS_PORT
+    valueFrom:
+      secretKeyRef:
+        name: redis
+        key: REDIS_PORT
+  - name: EVENTS_BQ_TABLE
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: EVENTS_BQ_TABLE
+  - name: EVENTS_BQ_DATASET
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: EVENTS_BQ_DATASET
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    # cloud.google.com/backend-config: '{"default": "apple-backend-config"}'
+    # cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: false
+  # className: ""
+  # annotations:
+  #   kubernetes.io/ingress.class: gce
+  #   kubernetes.io/tls-acme: "true"
+  #   kubernetes.io/ingress.global-static-ip-name: demo-backend-lb-address
+  # hosts:
+  #   - host: example.com
+  #     paths:
+  #       - path: /*
+  #         pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: REPLACE_ME
+  #    hosts:
+  #      - chart-example.local
+
+
+GKEmanagedCertificate:
+  enabled: false
+
+gceBackendConfig:
+  enabled: false
+#   spec:
+#     customResponseHeaders:
+#       headers:
+#       - "Access-Control-Allow-Origin:https://example.com"
+#       - "Access-Control-Allow-Methods:GET, POST, OPTIONS"
+#       - "Access-Control-Allow-Headers:DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+#       - "Access-Control-Expose-Headers:Content-Length,Content-Range"
+#     logging:
+#       enable: true
+#       sampleRate: 1.0
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "auto-api.fullname" . }}
+  labels:
+    {{- include "auto-api.labels" . | nindent 4 }}
+  annotations:
+  {{- toYaml .Values.service.annotations | nindent 4 }}
+  {{- if .Values.gceBackendConfig.enabled }}
+    cloud.google.com/backend-config: '{"default": "{{ include "auto-api.fullname" . }}-backend-config"}'
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "auto-api.selectorLabels" . | nindent 4 }}

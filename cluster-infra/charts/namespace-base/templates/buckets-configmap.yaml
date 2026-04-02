@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: buckets
+  labels:
+    environment: "{{ .Values.environment }}"
+
+data:
+  {{- toYaml .Values.buckets.data | nindent 2 }}

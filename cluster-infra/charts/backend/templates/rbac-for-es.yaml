@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: externalsecret-access
+  namespace: mycompany
+rules:
+- apiGroups: ["external-secrets.io"]
+  resources: ["externalsecrets"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: externalsecret-access-binding
+  namespace: mycompany
+subjects:
+- kind: ServiceAccount
+  name: {{ include "backend.fullname" . }}
+  namespace: mycompany
+roleRef:
+  kind: Role
+  name: externalsecret-access
+  apiGroup: rbac.authorization.k8s.io

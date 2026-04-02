@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/audit-backend
+  pullPolicy: Always
+  tag: "dev-0393a67e"
+
+imagePullSecrets:
+  - name: "regcred"
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+
+env:
+  - name: PORT
+    value: "3000"
+  - name: PROJECT
+    value: "my-gcp-project-id"
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: "my-gcp-project-id.json"
+  - name: DATASET
+    value: "static_staging"
+  - name: AUDIT_TABLE
+    value: "audit_logs"
+  - name: DB_URL
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: DB_URL
+  - name: SUPER_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: audit-backend
+        key: SUPER_TOKEN
+
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  annotations:
+    # kubernetes.io/tls-acme: "true" # DO NOT USE THIS ANNOTATION WITH GKE ManagedCertificate
+    networking.gke.io/v1beta1.FrontendConfig: "banana-frontend-config"
+    networking.gke.io/managed-certificates: "banana-audit-backend-managed-cert"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector:
+  workload: application

@@ -1,0 +1,70 @@
+nodeSelector: 
+  workload: secondary-builder
+
+# This should be set from commandline on first run to create the secret for the gitlab runner
+# After which if the secret already exists, it will not be updated unless forceSecretUpdate is set to true
+gitlabRunnerRegistrationSecretValue: ""
+forceSecretUpdate: false
+
+dindCacheStorageSize: 100Gi
+
+gitlab:
+  rbac:
+    create: true
+    serviceAccountAnnotations:
+      iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+  
+  runners:
+    name: "apple-gitlab-runner-secondary"
+    registrationTokenSecretName: gitlab-runner-registration-token
+    registrationTokenSecretKey:  registration-token
+    tags: cluster,kubernetes
+    privileged: true
+    secret: REPLACE_ME
+    concurrent: 2
+    config: |
+      [[runners]]
+        environment = ["DOCKER_HOST=tcp://{{.Release.Name}}-mycompany-gitlab-runner-docker-dind:2375"]
+        [runners.cache]
+          Type = "gcs"
+          Path = "cache/"
+          Shared = true
+        [runners.cache.gcs]
+          BucketName = "my-gcp-project-id"
+        [runners.kubernetes]
+          image = "ubuntu:22.04"
+          namespace = "{{.Release.Namespace}}"
+          privileged = true
+          service_account = "gitlab-runner-secondary"
+          cpu_request         = "2"
+          cpu_limit           = "4"
+          memory_request      = "8Gi"
+          memory_limit        = "16Gi"
+          service_cpu_request    = "1"
+          service_cpu_limit      = "2"
+          service_memory_request = "4Gi"
+          service_memory_limit   = "8Gi"
+          helper_cpu_request     = "500m"
+          helper_cpu_limit       = "1"
+          helper_memory_request  = "1024Mi"
+          helper_memory_limit    = "2048Mi"
+          [runners.kubernetes.node_selector]
+            workload = "secondary-builder"
+  nodeSelector:
+    workload: secondary-builder
+
+
+
+        # [runners.kubernetes]
+        #   image = "ubuntu:22.04"
+        #   namespace = "{{.Release.Namespace}}"
+        #   privileged = true
+        #   service_account = "gitlab-runner"
+        #   cpu_limit = "1.5"
+        #   memory_limit = "1.5Gi"
+        #   service_cpu_limit = "500m"
+        #   service_memory_limit = "512Mi"
+        #   helper_cpu_limit = "500m"
+        #   helper_memory_limit = "100Mi"
+        #   [runners.kubernetes.node_selector]
+        #     workload = "builder"

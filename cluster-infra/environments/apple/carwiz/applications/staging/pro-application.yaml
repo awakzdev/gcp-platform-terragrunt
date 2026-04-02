@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apple-pro
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: pro=registry.gitlab.com/mycompany/pro:^staging-.{8}$
+    argocd-image-updater.argoproj.io/pro.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/pro.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/pro.allow-tags: regexp:^staging-.{8}$
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/pro
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/apple/mycompany/applications/staging/pro-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

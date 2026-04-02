@@ -1,0 +1,187 @@
+include:
+  - template: Jobs/SAST-IaC.latest.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab/blob/master/lib/gitlab/ci/templates/Jobs/SAST-IaC.latest.gitlab-ci.yml
+
+stages:
+  - decrypt
+  - prepare
+  - validate
+  - build
+  - test
+  - deploy
+
+default:
+  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
+  tags:
+    - apple
+
+variables:
+  IMAGE_TAG: latest
+
+.variables_common: &variables_common
+  root_dir: "live/mycompany/${ENVIRONMENT}"
+
+.default_before_script: &default_before_script
+  - apk add --no-cache openssh-client
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$SSH_PRIVATE_KEY") >/dev/null 2>&1
+  - mkdir -p ~/.ssh
+  - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+  - echo "$SSH_HOST_CONFIG" > ~/.ssh/config
+  # Caution: The line below makes the connection vulnerable to Man-in-the-Middle attacks.
+  # Should only be used in controlled environments where the network and the hosts are secure.
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+.build_template: &build_template
+  stage: build
+  before_script: *default_before_script
+  script:
+    - cd ${root_dir}
+    - terragrunt run-all plan -input=false -out=plan.cache
+  cache:
+    paths:
+      # - ${root_dir}/**/.terragrunt-cache
+      - ${root_dir}/**/plan.cache
+    key: ${CI_COMMIT_SHA}-${ENVIRONMENT}
+    policy: push
+  retry: 2
+
+.deploy_template: &deploy_template
+  stage: deploy
+  before_script: *default_before_script
+  when: manual
+  environment:
+    name: $ENVIRONMENT
+  script:
+    - cd ${root_dir}
+    - |
+      if terragrunt run-all apply --terragrunt-non-interactive -input=false plan.cache; then
+        echo "Apply succeeded."
+      else
+        echo "Apply failed or plan is stale. Regenerating plan."
+        terragrunt run-all plan -input=false -out=plan.cache
+        terragrunt run-all apply --terragrunt-non-interactive -input=false plan.cache
+      fi
+  cache:
+    paths:
+      # - ${root_dir}/**/.terragrunt-cache
+      - ${root_dir}/**/plan.cache
+    key: ${CI_COMMIT_SHA}-${ENVIRONMENT}
+    policy: pull
+
+decrypt:
+  stage: decrypt
+  image: google/cloud-sdk:alpine
+  variables:
+    ENVIRONMENTS: "apple banana date"
+  script:
+    - >
+      for ENV in $ENVIRONMENTS; do
+        FILE="live/mycompany/$ENV/secret_vars.yaml.enc"
+        if [ -f "$FILE" ]; then
+          gcloud kms decrypt --location global --keyring mycompany --key terragrunt --ciphertext-file "$FILE" --plaintext-file "${FILE%.*}";
+          echo "$ENV environment secrets decrypted successfully."
+        else
+          echo "Encrypted file not found for environment: $ENV";
+        fi
+      done
+  artifacts:
+    untracked: true
+    expire_in: 60 min
+    # Cache files can include secrets which can be accidentally exposed.
+    # Please exercise caution when utilizing secrets in your Terraform infrastructure and
+    # consider limiting access to artifacts or take other security measures to protect sensitive information.
+    #
+    # The next line, which disables public access to pipeline artifacts, is not available on GitLab.com.
+    # See: https://docs.gitlab.com/ee/ci/yaml/#artifactspublic
+    public: false
+
+build_image:
+  stage: prepare
+  image: docker:git
+  services:
+    - docker:stable-dind
+  variables:
+    DOCKER_HOST: tcp://docker-dind:2375
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:latest ./.gitlab/ci/
+    - docker push $CI_REGISTRY_IMAGE:latest
+  rules:
+    - changes:
+        - .gitlab/ci/Dockerfile
+    - if: '$CI_MERGE_REQUEST_ID'
+
+kics-iac-sast:
+  before_script: *default_before_script
+  variables:
+    SAST_ANALYZER_IMAGE_TAG: latest
+  script:
+    - kics scan -p "$SCAN" --ignore-on-exit all --report-formats glsast -o ${PWD} --output-name kics-results --ci
+  artifacts:
+    expire_in: 60 min
+    paths:
+      - gl-sast-kics-results.json
+    reports:
+      sast: gl-sast-kics-results.json
+    when: always
+  rules:
+    - if: '$CI_COMMIT_MESSAGE =~ /scan/ || $CI_COMMIT_TAG == "scan"' # Commit or tag with the keyword 'scan' to run
+
+validate:
+  stage: validate
+  before_script: *default_before_script
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "apple" # Configuration matches across all environments so validating a singular environment is sufficient.
+  script: 
+    - cd ${root_dir}
+    - terragrunt run-all validate
+  retry: 2
+
+build apple:
+  <<: *build_template
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "apple"
+
+build banana:
+  <<: *build_template
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "banana"
+
+# build corn:
+#   <<: *build_template
+#   variables:
+#     <<: *variables_common
+#     ENVIRONMENT: "corn"
+
+build date:
+  <<: *build_template
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "date"
+
+deploy apple:
+  <<: *deploy_template
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "apple"
+
+deploy banana:
+  <<: *deploy_template
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "banana"
+
+# deploy corn:
+#   <<: *deploy_template
+#   variables:
+#     <<: *variables_common
+#     ENVIRONMENT: "corn"
+
+deploy date:
+  <<: *deploy_template
+  variables:
+    <<: *variables_common
+    ENVIRONMENT: "date"

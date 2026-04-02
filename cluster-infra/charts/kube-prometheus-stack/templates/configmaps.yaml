@@ -1,0 +1,14 @@
+{{ range $path, $_ :=  .Files.Glob  "dashboards/**.json" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ trimPrefix (printf "%s/" ($path | dir)) ($path) }}
+  labels:
+    grafana_dashboard: '1'
+  annotations:
+    folder:  {{  trimPrefix (printf "%s/" "dashboards") ($path | dir) }}
+data:
+  {{ trimPrefix (printf "%s/" ($path | dir)) ($path) }}: REPLACE_ME
+    {{- $.Files.Get $path | nindent 4 }}
+---
+{{- end }}

@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: infra
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Cluster wide infrastructure applications
+  sourceRepos:
+  - 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+
+  # Only permit applications to deploy to the guestbook namespace in the same cluster
+  # Destination clusters can be identified by 'server', 'name', or both.
+  destinations:
+  - namespace: infra
+    server: https://kubernetes.default.svc
+    name: in-cluster
+
+  orphanedResources:
+    warn: false
+
+  roles:
+  # A role which provides read-only access to all applications in the project
+  - name: read-only
+    description: Read-only privileges to infra applications
+    policies:
+    - p, proj:infra:read-only, applications, get, infra/*, allow
+    groups:
+    - my-oidc-group
+
+  # A role which provides sync privileges to only the guestbook-dev application, e.g. to provide
+  # sync privileges to a CI system
+  - name: ci-role
+    description: Sync privileges for infra
+    policies:
+    - p, proj:infra:ci-role, applications, sync, infra/*, allow
+
+

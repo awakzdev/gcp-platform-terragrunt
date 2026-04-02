@@ -1,0 +1,121 @@
+defaultChartSource: 'https://shitty-mirror.local:5000/abc'
+defaultNamespace: infra
+defaultProject: default
+defaultGcpProject: my-gcp-project-id
+
+infraProject:
+  enabled: true
+  name: infra
+  orphanedResourcesWarn: false
+  sourceRepos:
+    - '*'
+  permissions:
+    adminGroups:
+      - admins
+  permitOnlyProjectScopedClusters: false
+  sourceNamespaces: []
+
+storageClass:
+  ssd:
+    enabled: true
+    type: pd-ssd
+    fstype: ext4
+    volumeBindingMode: WaitForFirstConsumer
+    reclaimPolicy: Delete
+    allowVolumeExpansion: true
+
+apps:
+  certManager:
+    enabled: true
+    version: "1.12.3"
+    name: cert-manager
+    namespace: cert-manager
+    chartSource: "https://charts.jetstack.io"
+    chart: "cert-manager"
+    valuesRepo: 'https://gitlab.com/my-gcp-project-id/iac/cluster-infra.git'
+    valuesFile: 'environments/lab/cluster-configs/cert-manager-values.yaml'
+    valuesRevision: 'dev'
+    clusterIssuers: 
+      enabled: false
+      email: user@example.com
+      gceIntegration: 
+        enabled: true
+        # projectOverride: my-gcp-project-id
+        # selector:
+        #   dnsNames: "*"
+        #   dnsZones: "*"
+# Additional solvers can be added in addition to the built-in google cloud dns integration. 
+# Make sure to configure the selectors in order to achieve consistent resolution
+      # solvers:
+      #   - dns01:
+      #       cloudDNS:
+      #         project: nonsense
+    annotations: {}
+    values: {}
+  ingressNginx:
+    enabled: true
+    version: "4.7.1"
+    name: ingress-nginx
+    namespace: ingress-nginx
+    chartSource: "https://kubernetes.github.io/ingress-nginx"
+    chart: "ingress-nginx"
+    valuesRepo: 'https://gitlab.com/my-gcp-project-id/iac/cluster-infra.git'
+    valuesFile: 'environments/lab/cluster-configs/ingress-nginx-values.yaml'
+    valuesRevision: 'dev'
+    annotations: {}
+    values: {}
+  externalDns:
+    enabled: true
+    version: "1.13.0"
+    name: external-dns
+    namespace: external-dns
+    chartSource: "https://kubernetes-sigs.github.io/external-dns/"
+    chart: "external-dns"
+    valuesRepo: 'https://gitlab.com/my-gcp-project-id/iac/cluster-infra.git'
+    valuesFile: 'environments/lab/cluster-configs/external-dns-values.yaml'
+    valuesRevision: 'dev'
+    annotations: {}
+    values: {}
+  externalSecretsOperator:
+    enabled: true
+    version: "0.9.5"
+    name: external-secrets
+    namespace: external-secrets
+    chartSource: "https://charts.external-secrets.io/"
+    chart: "external-secrets"
+    valuesRepo: 'https://gitlab.com/my-gcp-project-id/iac/cluster-infra.git'
+    valuesFile: 'environments/lab/cluster-configs/external-secrets-operator-values.yaml'
+    valuesRevision: 'dev'
+    annotations: {}
+    values: {}
+  argocdImageUpdater:
+    enabled: true
+    version: "0.9.1"
+    name: argocd-image-updater
+    namespace: argocd
+    chartSource: "https://argoproj.github.io/argo-helm"
+    chart: "argocd-image-updater"
+    valuesRepo: 'https://gitlab.com/my-gcp-project-id/iac/cluster-infra.git'
+    valuesFile: 'environments/lab/cluster-configs/argocd-image-updater-values.yaml'
+    valuesRevision: 'dev'
+    deployGcloudCredHelper: true
+    annotations: {}
+    values: {}
+  kubePrometheusStack:
+    enabled: true
+    version: "52.1.0"
+    name: kube-prometheus-stack
+    namespace: kube-prometheus
+    chartSource: "https://prometheus-community.github.io/helm-charts"
+    chart: "kube-prometheus-stack"
+    valuesRepo: 'https://gitlab.com/my-gcp-project-id/iac/cluster-infra.git'
+    valuesFile: 'environments/lab/cluster-configs/kube-prometheus-stack-values.yaml'
+    valuesRevision: 'dev'
+    annotations: {}
+    values: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

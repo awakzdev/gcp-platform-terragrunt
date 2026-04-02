@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: refresh-externalsecret-job
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
+spec:
+  template:
+    spec:
+      serviceAccountName: {{ include "backend.fullname" . }}
+      containers:
+      - name: refresh-externalsecret
+        image: bitnami/kubectl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - kubectl annotate externalsecret externalsecret-backend kubectl.kubernetes.io/reload=$(date +%s) -n mycompany --overwrite
+      restartPolicy: Never
+  backoffLimit: 4

@@ -1,0 +1,62 @@
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/carwizx
+  pullPolicy: Always
+  tag: "main-8fd37aa3"
+
+imagePullSecrets:
+  - name: "regcred"
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+
+env:
+  - name: PORT
+    value: "3000"
+  - name: PROJECT
+    value: "my-gcp-project-id"
+  - name: BUCKET
+    value: "carwizx"
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: "mycompany.json"
+    
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  annotations:
+    # kubernetes.io/tls-acme: "true" # DO NOT USE THIS ANNOTATION WITH GKE ManagedCertificate
+    networking.gke.io/v1beta1.FrontendConfig: "date-frontend-config"
+    networking.gke.io/managed-certificates: "date-mycompany-x-managed-cert"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector:
+  workload: application

@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  admin-user: REPLACE_ME
+  adminPassword: REPLACE_ME
+kind: Secret
+metadata:
+  name: grafana-adminpwd
+  namespace: monitoring
+type: Opaque

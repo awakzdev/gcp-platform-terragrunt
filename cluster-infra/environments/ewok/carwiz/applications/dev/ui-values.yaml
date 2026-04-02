@@ -1,0 +1,112 @@
+# Default values for ui-next.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/ui-next
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "staging-cbece8d5"
+
+imagePullSecrets:
+  - name: "regcred"
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+
+env:
+  - name: SCHEMA
+    value: "mycompany"
+  - name: PORT
+    value: "3000"
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+    cdn:
+      enabled: true
+      cacheMode: CACHE_ALL_STATIC
+      clientTtl: 300
+      defaultTtl: 300
+      maxTtl: 86400
+      negativeCaching: true
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /about
+      port: 3000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    cloud.google.com/backend-config: '{"default": "banana-ui-ui-next-backend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "banana-frontend-config"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: REPLACE_ME
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  limits:
+    memory: 3Gi
+  requests:
+    cpu: 500m
+    memory: 3Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector:
+  workload: application
+
+tolerations: []
+
+affinity: {}

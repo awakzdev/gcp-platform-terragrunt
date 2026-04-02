@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: functions
+  labels:
+    environment: "{{ .Values.environment }}"
+
+data:
+  {{- toYaml .Values.functions.data | nindent 2 }}

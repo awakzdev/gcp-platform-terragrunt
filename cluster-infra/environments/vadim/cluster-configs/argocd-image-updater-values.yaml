@@ -1,0 +1,107 @@
+# -- Replica count for the deployment. It is not advised to run more than one replica.
+replicaCount: 1
+image:
+  # -- Default image repository
+  repository: quay.io/argoprojlabs/argocd-image-updater
+  # -- Default image pull policy
+  pullPolicy: Always
+  # -- Overrides the image tag whose default is the chart appVersion
+  tag: ""
+
+# -- The deployment strategy to use to replace existing pods with new ones
+updateStrategy:
+  type: Recreate
+# -- ImagePullSecrets for the image updater deployment
+imagePullSecrets:
+  - name: "regcred"
+
+config:
+  # -- API kind that is used to manage Argo CD applications (`kubernetes` or `argocd`)
+  applicationsAPIKind: ""
+
+  # Described in detail here https://argocd-image-updater.readthedocs.io/en/stable/install/running/#flags
+  argocd:
+    # -- Use the gRPC-web protocol to connect to the Argo CD API
+    grpcWeb: true
+    # -- Connect to the Argo CD API server at server address
+    serverAddress: "http://cluster-argo-cd-argocd-server"
+    # -- If specified, the certificate of the Argo CD API server is not verified.
+    insecure: true
+    # -- If specified, use an unencrypted HTTP connection to the ArgoCD API instead of TLS.
+    plaintext: true
+    # -- If specified, the secret with ArgoCD API key will be created.
+    token: ""
+
+  # -- ArgoCD Image Update log level
+  logLevel: "info"
+
+  # -- ArgoCD Image Updater registries list configuration. More information [here](https://argocd-image-updater.readthedocs.io/en/stable/configuration/registries/)
+  registries:
+    - name: Gitlab
+      api_url: https://registry.gitlab.com
+      prefix: registry.gitlab.com
+      ping: no
+      credentials: pullsecret:argocd/regcred
+    # - name: Google Container Registry
+    #   api_url: https://gcr.io
+    #   prefix: gcr.io
+    #   ping: no
+    #   credentials: pullsecret:REPLACE_ME
+    # - name: RedHat Quay
+    #   api_url: https://quay.io
+    #   ping: no
+    #   prefix: quay.io
+    #   credentials: env:REGISTRY_SECRET
+    # - name: ECR
+    #   api_url: https://123456789.dkr.ecr.eu-west-1.amazonaws.com
+    #   prefix: 123456789.dkr.ecr.eu-west-1.amazonaws.com
+    #   ping: yes
+    #   insecure: no
+    #   credentials: ext:/scripts/auth1.sh
+    #   credsexpire: 10h
+
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Pod Annotations for the deployment
+podAnnotations: {}
+
+# -- Pod Labels for the deployment
+podLabels: {}
+
+# -- Pod security context settings for the deployment
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# -- Security context settings for the deployment
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+rbac:
+  # -- Enable RBAC creation
+  enabled: true
+
+# -- Pod memory and cpu resource settings for the deployment
+resources: {}
+
+# -- Kubernetes nodeSelector settings for the deployment
+nodeSelector:
+  workload: infra
+
+# -- Kubernetes toleration settings for the deployment
+tolerations: []
+
+# -- Kubernetes affinity settings for the deployment
+affinity: {}

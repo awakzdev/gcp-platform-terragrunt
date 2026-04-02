@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apple-admin
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/admin
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/apple/mycompany/applications/staging/admin-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

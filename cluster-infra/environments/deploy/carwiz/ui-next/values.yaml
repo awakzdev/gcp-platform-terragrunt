@@ -1,0 +1,172 @@
+# Default values for ui-next.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/my-gcp-project-id/ui-next
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "0.1.21"
+
+imagePullSecrets: 
+  - name: "regcred"
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+env:
+  - name: SCHEMA
+    value: "mycompany"
+  - name: PORT
+    value: "3000"
+  - name: NEXT_PUBLIC_API_BASE_URL
+    value: https://example.com/api
+  - name: NEXT_PUBLIC_IMAGEKIT_URL
+    value: https://example.com/staging
+  - name: CARSYNC_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: CARSYNC_PASSWORD
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+  - name: MESSAGEBIRD_SIGNING_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: MESSAGEBIRD_SIGNING_KEY
+  - name: DB_URL
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: DB_URL
+  - name: DB_READ_ONLY_URL
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: DB_READ_ONLY_URL
+  - name: NAME_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: NAME_PASSWORD
+  - name: CAR_DETAILS_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: car_details
+  - name: RECOMMENDATIONS_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: generate_user_recommendations_on_demand
+  - name: FAST_CHECK_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: fast_check_http
+  - name: PUBSUB_SYSTEM_EVENTS_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: pubsub_system_events_topic
+  - name: PUBSUB_NOTIFICATIONS_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: pubsub_notifications_topic
+  - name: FILTER_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: filter_topic
+  - name: MERGE_USER_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: merge_user_topic
+  - name: USER_PREFERENCES_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: user_preferences_topic
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    valueFrom:
+      secretKeyRef:
+        name: gac
+        key: GOOGLE_APPLICATION_CREDENTIALS
+
+
+
+service:
+  type: LoadBalancer
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/managed-certificates: ui-cert
+    kubernetes.io/ingress.global-static-ip-name: demo-backend-lb-address
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: REPLACE_ME
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector:
+  workload: production
+
+tolerations: []
+
+affinity: {}

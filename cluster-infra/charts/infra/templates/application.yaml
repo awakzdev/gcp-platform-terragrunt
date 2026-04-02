@@ -1,0 +1,41 @@
+{{- range $k, $v := .Values.apps }}
+{{- if $v.enabled }}
+{{- with $v }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .name }}
+  namespace: {{ default .appNamespace "argocd" }}
+  {{- with .annotations}}
+  annotations:
+    {{ toYaml . }}
+  {{- end }}
+spec:
+  project: {{ if $.Values.infraProject.enabled }} {{ $.Values.infraProject.name }} {{ else }} {{default $.Values.defaultProject .project }} {{ end }}
+  sources:
+    - repoURL: {{ default $.Values.defaultChartSource .chartSource }}
+      chart: {{ .chart }}
+      targetRevision: {{required "You must provide a chart version to deploy" .version }}
+      helm:
+        {{- with .valuesFile }}
+        valueFiles:
+          - {{ (printf "$values/%s" ( . )) }}
+        {{- end }}
+        {{- with .values }}
+        values: |
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+    - repoURL: {{ .valuesRepo | quote }}
+      targetRevision: {{ .valuesRevision }}
+      ref: values
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: {{ default $.defaultNamespace .namespace }}
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated: {}
+{{- end }}
+{{- end }}
+{{- end }}

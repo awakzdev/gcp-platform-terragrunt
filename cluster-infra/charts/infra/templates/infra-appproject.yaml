@@ -1,0 +1,60 @@
+{{- if $.Values.infraProject.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ .Values.infraProject.name }}
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Project to hold the cluster infra applications
+  sourceRepos:
+    {{- toYaml .Values.infraProject.sourceRepos | nindent 4}}
+  {{ with .Values.infraProject.orphanedResourcesWarn }}
+  orphanedResources:
+    warn: {{ . }}
+  {{- end }}
+
+  destinations:
+    - namespace: '*'
+      server: '*'
+
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  roles:
+  # A role which provides read-only access to all applications in the project
+  {{- with .Values.infraProject.permissions.adminGroups }}
+  - name: cluster-admin
+    description: Admin privileges to the cluster-infra
+    policies:
+      - p, proj:infra:*, *, *, allow
+    groups:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+  
+    # A role which provides read-only access to all applications in the project
+  {{- with .Values.infraProject.permissions.readOnlyGroups }}
+  - name: read-only
+    description: Read-only privileges to my-project
+    policies:
+    - p, proj:my-project:read-only, applications, get, infra/*, allow
+    groups:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+
+  {{- with .Values.infraProject.permitOnlyProjectScopedClusters }}
+  # By default, apps may sync to any cluster specified under the `destinations` field, even if they are not
+  # scoped to this project. Set the following field to `true` to restrict apps in this cluster to only clusters
+  # scoped to this project.
+  permitOnlyProjectScopedClusters: {{ . }}
+  {{- end }}
+
+  {{- with .Values.infraProject.sourceNamespaces }}
+  # When using Applications-in-any-namespace, this field determines which namespaces this AppProject permits
+  # Applications to reside in. Details: https://argo-cd.readthedocs.io/en/stable/operator-manual/app-any-namespace/
+  sourceNamespaces:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

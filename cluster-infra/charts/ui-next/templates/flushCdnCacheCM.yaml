@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-invalidate-cdn-cache-script
+data:
+  invalidate_cdn_cache.sh: REPLACE_ME
+        #!/bin/bash
+
+        set -e  # Exit immediately if a command exits with a non-zero status
+
+        echo "Starting CDN cache invalidation script..."
+
+        LB_NAME="{{ .Release.Namespace }}-{{ include "ui-next.fullname" . }}"
+        echo "Load Balancer Name: $LB_NAME"
+
+        URL_MAPS=$(gcloud compute url-maps list --format="value(name)" | grep $LB_NAME || true)
+        echo "URL Maps found: $URL_MAPS"
+
+        check_https_backend() {
+            local url_map=$1
+            gcloud compute url-maps describe $url_map --format="json" | grep '"defaultService": "https://' > /dev/null
+        }
+
+        if [ -z "$URL_MAPS" ]; then
+            echo "No URL maps found matching: $LB_NAME"
+            # Exit with status 0 and continue
+            exit 0
+        fi
+
+        for URL_MAP in $URL_MAPS; do
+            echo "Checking URL Map: $URL_MAP"
+            if check_https_backend $URL_MAP; then
+                echo "Sending invalidate CDN cache request for Load balancer: $URL_MAP"
+                gcloud compute url-maps invalidate-cdn-cache $URL_MAP --path "/*" &
+                echo "Successfully sent invalidate CDN cache request for Load balancer: $URL_MAP"
+                echo "Sleeping for 10 seconds to allow background processes to complete..."
+                sleep 10
+                break
+            else
+                echo "URL Map $URL_MAP does not have an HTTPS backend"
+            fi
+        done
+
+        echo "CDN cache invalidation script completed successfully."
+        exit 0

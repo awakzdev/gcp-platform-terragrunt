@@ -1,0 +1,227 @@
+# Default values for backend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/backend
+#  repository: busybox
+#  tag: "latest"
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "staging-e53b29ea"
+
+nginx:
+  image:
+    repository: nginx
+    pullPolicy: IfNotPresent
+    tag: "stable-alpine-slim"
+
+migrations:
+  migrateCommand: |
+    cd db/migrations13 && \
+    sqitch --verbose deploy db:$DB_URL
+  image:
+    repository: registry.gitlab.com/mycompany/backend
+    pullPolicy: Always
+    tag: "staging-e53b29ea-migrations"
+
+
+imagePullSecrets:
+  - name: "regcred"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations:
+    #iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+env:
+  - name: SCHEMA
+    value: "mycompany"
+  - name: PORT
+    value: "3000"
+  - name: CARSYNC_PASSWORD
+    valueFrom:
+       secretKeyRef:
+         name: backend
+         key: CARSYNC_PASSWORD
+  - name: DB_READ_ONLY_URL
+    valueFrom:
+       secretKeyRef:
+         name: backend
+         key: DB_READ_ONLY_URL
+  - name: DB_URL
+    valueFrom:
+       secretKeyRef:
+         name: backend
+         key: DB_URL
+  - name: RECAPTCHA_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        key: RECAPTCHA_SECRET_KEY
+        name: recaptcha
+  - name: RECAPTCHA_VERIFY_URL
+    valueFrom:
+      secretKeyRef:
+        key: RECAPTCHA_VERIFY_URL
+        name: recaptcha         
+  - name: FAST_CHECK_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: fast_check_http
+  - name: CAR_POST_VIEWS_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: car_post_views
+  - name: FILTER_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: filter_topic
+  - name: GENERATE_SIGNED_URL_SECURED_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: generate_signed_url_secured_url
+  - name: GRAPHILE_LICENSE
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHILE_LICENSE
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+  - name: MASKYOO_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: MASKYOO_KEY
+  - name: MERGE_USER_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: merge_user_topic
+  - name: MESSAGEBIRD_SIGNING_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: MESSAGEBIRD_SIGNING_KEY
+  - name: NAME_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: NAME_PASSWORD
+  - name: NODE_ENV
+    value: "dev"
+  - name: ORDER_VERIFICATION_BUCKET_NAME
+    valueFrom:
+      configMapKeyRef:
+        name: buckets
+        key: order_verification_bucket_name
+  - name: ORDER_VERIFICATION_FOLDER_NAME
+    valueFrom:
+      configMapKeyRef:
+        name: buckets
+        key: order_verification_folder_name
+  - name: PUBSUB_NOTIFICATIONS_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: pubsub_notifications_topic
+  - name: PUBSUB_SYSTEM_EVENTS_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: pubsub_system_events_topic
+  - name: RECOMMENDATIONS_URL
+    valueFrom:
+      configMapKeyRef:
+        name: functions
+        key: generate_user_recommendations_on_demand
+  - name: UNSUBSCRIBE_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: UNSUBSCRIBE_KEY
+  - name: USER_PREFERENCES_TOPIC
+    valueFrom:
+      configMapKeyRef:
+        name: pubsub
+        key: user_preferences_topic
+
+
+generateSignedUrl: https://example.com/generate_signed_url
+baseDomain: example.com
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    customResponseHeaders:
+      headers:
+      - "Access-Control-Allow-Origin:*"
+      - "Access-Control-Allow-Methods:GET, POST, OPTIONS"
+      - "Access-Control-Allow-Headers:DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+      - "Access-Control-Expose-Headers:Content-Length,Content-Range"
+    logging:
+      enable: true
+      sampleRate: 1.0
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /health
+      port: 80
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "banana-frontend-config"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+  tls: []
+
+resources:
+  limits:
+    memory: 512Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+
+nodeSelector:
+  workload: application
+

@@ -1,0 +1,106 @@
+# Default values for my-gcp-project-id.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: docker
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "19.03-dind"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  dind:
+    port: 2375
+    targetPort: 2375
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: 
+  workload: builder
+
+tolerations: []
+
+affinity: {}
+
+# This should be set from commandline on first run to create the secret for the gitlab runner
+# After which if the secret already exists, it will not be updated unless forceSecretUpdate is set to true
+gitlabRunnerRegistrationSecretValue: ""
+forceSecretUpdate: false
+
+dindCacheStorageClass: ssd
+dindCacheStorageSize: 50Gi
+
+gitlab:
+  gitlabUrl: https://gitlab.com/
+  rbac:
+    create: true
+  runners:
+    secret: REPLACE_ME
+    config: |
+      [[runners]]
+        environment = ["DOCKER_HOST=tcp://{{.Release.Name}}-mycompany-gitlab-runner-docker-dind:2375"]
+        [runners.kubernetes]
+          namespace = "{{.Release.Namespace}}"
+          image = "ubuntu:22.04"
+          privileged = true
+          service_account = "gitlab-runner"
+          [runners.kubernetes.node_selector]
+            workload = "builder"
+
+    name: "kube-gke"
+    tags: "kube-gke"
+    privileged: true
+  nodeselector:
+    workload: builder
+
+dindCacheClear:
+  enabled: true
+  image: docker:git
+  DOCKER_HOST: tcp://docker-dind:2375
+  schedule: 0 0 * * 5

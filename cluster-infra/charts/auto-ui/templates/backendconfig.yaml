@@ -1,0 +1,9 @@
+{{- if .Values.gceBackendConfig.enabled }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ include "auto-ui.fullname" . }}-backend-config
+spec:
+{{- toYaml .Values.gceBackendConfig.spec | nindent 2 }}
+  
+{{- end }}

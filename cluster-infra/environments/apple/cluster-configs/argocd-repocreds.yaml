@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-gcp-project-id
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds
+stringData:
+  url: REPLACE_ME
+  type: REPLACE_ME
+  password: REPLACE_ME
+  username: REPLACE_ME

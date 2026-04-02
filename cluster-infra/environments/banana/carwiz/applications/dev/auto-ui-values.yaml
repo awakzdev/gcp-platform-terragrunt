@@ -1,0 +1,161 @@
+# Default values for auto-ui.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enables healthcheck toggle (on/off).
+livenessProbe: false
+readinessProbe: false
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/auto-sandbox/ui
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "dev-7cda556d"
+
+imagePullSecrets: 
+  - name: "regcred"
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+  
+env:
+  - name: SCHEMA
+    value: "auto"
+  - name: PORT
+    value: "3000"
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+  - name: REDIS_HOST
+    valueFrom:
+      secretKeyRef:
+        name: redis
+        key: REDIS_HOST
+  - name: REDIS_PORT
+    valueFrom:
+      secretKeyRef:
+        name: redis
+        key: REDIS_PORT
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    cloud.google.com/backend-config: '{"default": "banana-auto-ui-backend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "banana-frontend-config"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: banana-auto-ui
+              port:
+                number: 80
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: banana-auto-ui
+              port:
+                number: 80
+  tls: []
+  #  - secretName: REPLACE_ME
+  #    hosts:
+  #      - chart-example.local
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+    cdn:
+      enabled: true
+      cacheMode: CACHE_ALL_STATIC
+      clientTtl: 300
+      defaultTtl: 300
+      maxTtl: 600
+      negativeCaching: false
+      serveWhileStale: 0
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /about
+      port: 3000
+    customResponseHeaders:
+      headers:
+      - 'Cache-Status:{cdn_cache_status}'
+      - "Access-Control-Allow-Origin:https://example.com"
+      - "Access-Control-Allow-Methods:GET, POST, OPTIONS"
+      - "Access-Control-Allow-Headers:DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+      - "Access-Control-Expose-Headers:Content-Length,Content-Range"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

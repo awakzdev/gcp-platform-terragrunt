@@ -1,0 +1,39 @@
+# Default values for ui-next.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+imagePullSecrets: 
+  - name: "regcred"
+
+GKEmanagedCertificate:
+  enabled: false
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    cloud.google.com/backend-config: '{"default": "banana-backend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: le-prod
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/auth-signin: https://example.com/oauth2/start?rd=$scheme://$best_http_host$request_uri
+    nginx.ingress.kubernetes.io/auth-url: https://example.com/oauth2/auth
+
+
+resources:
+  limits:
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 2Gi
+
+nodeSelector:
+  workload: application

@@ -1,0 +1,34 @@
+{{- if .Values.dindCacheClear.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels:
+    app.kubernetes.io/name : {{ include "my-gcp-project-id.fullname" . }}-docker-dind
+  name: {{ include "my-gcp-project-id.fullname" . }}-clear-cache
+spec:
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name : {{ include "my-gcp-project-id.fullname" . }}-docker-dind
+      name: {{ include "my-gcp-project-id.fullname" . }}-clear-cache
+    spec:
+      template:
+        spec:
+          containers:
+            - command:
+                - docker
+                - system
+                - prune
+                - -af
+              image: {{ .Values.dindCacheClear.image }}
+              name: {{ include "my-gcp-project-id.fullname" . }}-clear-cache
+              env:
+                - name: DOCKER_HOST
+                  value: {{ .Values.dindCacheClear.DOCKER_HOST }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          restartPolicy: OnFailure
+  schedule: {{ .Values.dindCacheClear.schedule }} 
+{{ end }}

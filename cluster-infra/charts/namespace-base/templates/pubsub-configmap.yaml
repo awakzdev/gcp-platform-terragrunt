@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pubsub
+  labels:
+    environment: "{{ .Values.environment }}"
+
+data:
+  user_preferences_topic: "REPLACE_ME"
+  merge_user_topic: "REPLACE_ME"
+  filter_topic: "REPLACE_ME"
+  pubsub_notifications_topic: "REPLACE_ME"
+  pubsub_system_events_topic: "REPLACE_ME"

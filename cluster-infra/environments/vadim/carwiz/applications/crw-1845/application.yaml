@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: ui-next=registry.gitlab.com/mycompany/ui-next:^CRW-1845
+    argocd-image-updater.argoproj.io/ui-next.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/ui-next.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/ui-next.allow-tags: regexp:^CRW-1845-.*
+  name: crw-1845
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/ui-next
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/apple/mycompany/applications/crw-1845/values.yaml'
+      parameters:
+        - name: image.name
+          value: registry.gitlab.com/mycompany/ui-next
+          forceString: true
+        - name: image.tag
+          value: CRW-1845-bd84ffae
+          forceString: true
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

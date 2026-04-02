@@ -1,0 +1,55 @@
+global:
+  nodeSelector:
+    workload: infra
+configs:
+  params:
+    server.insecure: true
+server:
+  containerPorts:
+    server: 8080
+  service:
+    type: ClusterIP      
+    annotations:
+      cloud.google.com/neg: '{"ingress": true}'
+      cloud.google.com/backend-config: '{"ports": {"http":"cluster-argo-cd-argocd-server"}}'
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: gce
+      kubernetes.io/tls-acme: "true"
+      kubernetes.io/ingress.global-static-ip-name: deploy-ingress-lb-address
+      networking.gke.io/v1beta1.FrontendConfig: "cluster-argo-cd-argocd-server"
+      networking.gke.io/managed-certificates: cluster-argo-cd-argocd-server
+    hosts:
+      - example.com
+    paths:
+      - /*
+    pathType: ImplementationSpecific
+  GKEmanagedCertificate:
+    # -- Enable ManagedCertificate custom resource for Google Kubernetes Engine.
+    enabled: true
+    # -- Domains for the Google Managed Certificate
+    domains:
+    - example.com
+  GKEbackendConfig:
+    # -- Enable BackendConfig custom resource for Google Kubernetes Engine
+    enabled: true
+    # -- [BackendConfigSpec]
+    spec:
+      healthCheck:
+        checkIntervalSec: 30
+        timeoutSec: 5
+        healthyThreshold: 1
+        unhealthyThreshold: 2
+        type: HTTP
+        requestPath: /healthz
+        port: 8080
+  GKEfrontendConfig:
+    # -- Enable FrontConfig custom resource for Google Kubernetes Engine
+    enabled: true
+    # -- [FrontendConfigSpec]
+    spec:
+      redirectToHttps:
+        enabled: true
+        responseCodeName: "301"
+      sslPolicy: deploy-ssl-policy

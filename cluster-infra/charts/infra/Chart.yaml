@@ -1,0 +1,6 @@
+apiVersion: v2
+name: infra
+description: A Helm chart to deploy standard GKE infra
+
+type: application
+version: 0.0.1

@@ -1,0 +1,9 @@
+{{- if .Values.gceBackendConfig.enabled }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ include "gateway.fullname" . }}-gateway
+spec:
+{{- toYaml .Values.gceBackendConfig.spec | nindent 2 }}
+  
+{{- end }}

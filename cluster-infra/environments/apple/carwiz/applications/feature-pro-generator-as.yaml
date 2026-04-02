@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: pro-feature-branches
+spec:
+  generators:
+  - pullRequest:
+      gitlab:
+        # The GitLab project.
+        project: "11889449"
+        # Reference to a Secret containing an access token. (optional)
+        tokenRef:
+          secretName: gitlab-creds
+          key: token
+        # Labels is used to filter the MRs that you want to target. (optional)
+        labels:
+        - deploy
+        # MR state is used to filter MRs only with a certain state. (optional)
+        pullRequestState: opened
+      requeueAfterSeconds: 300
+  template:
+    metadata:
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: "pro=registry.gitlab.com/mycompany/pro:^{{ branch }}"
+        argocd-image-updater.argoproj.io/pro.pull-secret: REPLACE_ME
+        argocd-image-updater.argoproj.io/pro.update-strategy: latest
+        argocd-image-updater.argoproj.io/write-back-method: argocd
+        argocd-image-updater.argoproj.io/pro.allow-tags: "regexp:^{{ branch }}-{{ head_short_sha }}"
+      name: "pro-{{ branch_slug }}-{{ number }}"
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+        path: charts/pro
+        targetRevision: dev
+        helm:
+          valueFiles:
+            - '../../environments/apple/mycompany/applications/feature-pro-values.yaml'
+          parameters:
+            - name: image.repository
+              value: registry.gitlab.com/mycompany/pro
+              forceString: true
+            - name: image.tag
+              value: "{{ branch }}-{{ head_short_sha }}"
+              forceString: true
+            - name: image.pullPolicy
+              value: Always
+            - name: ingress.hosts[0].host
+              value: "pro-{{ branch_slug }}-{{ number }}.example.com"
+            - name: ingress.hosts[0].paths[0].path
+              value: /
+            - name: ingress.hosts[0].paths[0].pathType
+              value: Prefix
+            - name: ingress.tls[0].secretName
+              value: "pro-{{ branch_slug }}-{{ number }}-cert"
+            - name: ingress.tls[0].hosts[0]
+              value: "pro-{{ branch_slug }}-{{ number }}.example.com"
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: mycompany
+      syncPolicy:
+        automated: {}

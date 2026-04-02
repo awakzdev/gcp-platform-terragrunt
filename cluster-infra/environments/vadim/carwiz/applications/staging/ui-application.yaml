@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apple-ui
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/ui-next
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/apple/mycompany/applications/staging/ui-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

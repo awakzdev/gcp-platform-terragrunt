@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: private-repo-creds
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repo-creds
+stringData:
+  type: REPLACE_ME
+  url: REPLACE_ME
+  password: REPLACE_ME
+  username: REPLACE_ME

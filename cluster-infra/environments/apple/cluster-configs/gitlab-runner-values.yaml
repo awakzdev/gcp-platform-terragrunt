@@ -1,0 +1,65 @@
+nodeSelector: 
+  workload: builder
+
+# This should be set from commandline on first run to create the secret for the gitlab runner
+# After which if the secret already exists, it will not be updated unless forceSecretUpdate is set to true
+gitlabRunnerRegistrationSecretValue: ""
+forceSecretUpdate: false
+
+dindCacheStorageSize: 250Gi
+
+gitlab:
+  rbac:
+    create: true
+    serviceAccountAnnotations:
+      iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+  
+  runners:
+    name: "apple-gitlab-runner"
+    tags: "apple"
+    privileged: true
+    secret: REPLACE_ME
+    concurrent: 3
+    config: |
+      [[runners]]
+        environment = ["DOCKER_HOST=tcp://{{.Release.Name}}-mycompany-gitlab-runner-docker-dind:2375"]
+        [runners.cache]
+          Type = "gcs"
+          Path = "cache/"
+          Shared = true
+        [runners.cache.gcs]
+          BucketName = "my-gcp-project-id"
+        [runners.kubernetes]
+          image = "ubuntu:22.04"
+          namespace = "{{.Release.Namespace}}"
+          privileged = true
+          service_account = "gitlab-runner"
+<<<<<<< Updated upstream
+          cpu_limit = "1.25"
+          memory_limit = "5Gi"
+          service_cpu_limit = "300m"
+          service_memory_limit = "1Gi"
+          helper_cpu_limit = "150m"
+          helper_memory_limit = "500Mi"
+=======
+>>>>>>> Stashed changes
+          [runners.kubernetes.node_selector]
+            workload = "builder"
+  nodeSelector:
+    workload: builder
+
+
+
+        # [runners.kubernetes]
+        #   image = "ubuntu:22.04"
+        #   namespace = "{{.Release.Namespace}}"
+        #   privileged = true
+        #   service_account = "gitlab-runner"
+        #   cpu_limit = "1.5"
+        #   memory_limit = "1.5Gi"
+        #   service_cpu_limit = "500m"
+        #   service_memory_limit = "512Mi"
+        #   helper_cpu_limit = "500m"
+        #   helper_memory_limit = "100Mi"
+        #   [runners.kubernetes.node_selector]
+        #     workload = "builder"

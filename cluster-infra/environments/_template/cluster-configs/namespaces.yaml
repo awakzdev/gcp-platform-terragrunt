@@ -1,0 +1,56 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+api Version: v1
+kind: Namespace
+metadata:
+  name: mycompany
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> Cleaned up charts, renamed environment, preparing for deploy
+>>>>>>> Renamed environment, added a template environment for reference
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mycompany
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-dns
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+<<<<<<< HEAD
+  name: gitlab-runner
+=======
+<<<<<<< HEAD
+  name: gitlab-runner
+=======
+api Version: v1
+kind: Namespace
+metadata:
+  name: mycompany
+>>>>>>> 1b1e7f4d6a777599b23b6731db05e63b01fffe18
+>>>>>>> Updated environments
+=======
+  name: gitlab-runner
+>>>>>>> Cleaned up charts, renamed environment, preparing for deploy
+>>>>>>> Renamed environment, added a template environment for reference

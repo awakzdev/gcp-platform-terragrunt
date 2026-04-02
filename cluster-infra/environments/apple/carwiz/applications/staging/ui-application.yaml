@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: ui-next=registry.gitlab.com/mycompany/ui-next:^staging-.{8}$
+    argocd-image-updater.argoproj.io/ui-next.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/ui-next.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/ui-next.allow-tags: regexp:^staging-.{8}$
+  name: apple-ui
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/ui-next
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/apple/mycompany/applications/staging/ui-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

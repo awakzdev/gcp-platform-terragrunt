@@ -1,0 +1,152 @@
+# Default values for ui-next.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/ui-next
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "staging-cbece8d5"
+
+imagePullSecrets:
+  - name: "regcred"
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+
+env:
+  - name: SCHEMA
+    value: "mycompany"
+  - name: PORT
+    value: "3000"
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+  - name: REDIS_HOST
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: REDIS_HOST
+  - name: REDIS_PORT
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: REDIS_PORT
+  - name: EVENTS_BQ_TABLE
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: EVENTS_BQ_TABLE
+  - name: EVENTS_BQ_DATASET
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: EVENTS_BQ_DATASET
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+    cdn:
+      enabled: true
+      cacheMode: CACHE_ALL_STATIC
+      clientTtl: 300
+      defaultTtl: 300
+      maxTtl: 600
+      negativeCaching: false
+      serveWhileStale: 0
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /about
+      port: 3000
+    customResponseHeaders:
+      headers:
+      - 'Cache-Status:{cdn_cache_status}'
+      - "Access-Control-Allow-Origin:https://example.com"
+      - "Access-Control-Allow-Methods:GET, POST, OPTIONS"
+      - "Access-Control-Allow-Headers:DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+      - "Access-Control-Expose-Headers:Content-Length,Content-Range"
+
+
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    cloud.google.com/backend-config: '{"default": "banana-ui-ui-next-backend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "banana-frontend-config"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: banana-ui-ui-next
+              port:
+                number: 80
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: banana-ui-ui-next
+              port:
+                number: 80
+  tls: []
+  #  - secretName: REPLACE_ME
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  limits:
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 4Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector:
+  workload: application
+
+tolerations: []
+
+affinity: {}

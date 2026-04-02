@@ -1,0 +1,69 @@
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/admin
+  pullPolicy: Always
+  tag: "preprod-e5421e65"
+
+imagePullSecrets:
+  - name: "regcred"
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /health
+      port: 80
+
+env:
+  - name: NGINX_PORT
+    value: "80"
+  - name: REACT_APP_UI_URL
+    value: "https://example.com"
+  - name: REACT_APP_FILTERS_VALIDATE_URL
+    value: "https://us-central1-mycompany-97e29.cloudfunctions.net/corn-fetch_custom_insights/validate_filters"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "corn-frontend-config"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector:
+  workload: application

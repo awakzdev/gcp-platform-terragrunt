@@ -1,0 +1,107 @@
+podLabels:
+  customLableA: Aaaaa
+imageRenderer:
+  enabled: true
+  env:
+    RENDERING_ARGS: --disable-gpu,--window-size=1280x758
+    RENDERING_MODE: clustered
+  podLabels:
+    customLableB: Bbbbb
+  networkPolicy:
+    limitIngress: true
+    limitEgress: true
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+    requests:
+      cpu: 500m
+      memory: 50Mi
+  extraVolumes:
+    - name: empty-renderer-volume
+      emtpyDir: {}
+  extraVolumeMounts:
+    - mountPath: /tmp/renderer
+      name: empty-renderer-volume
+  extraConfigmapMounts:
+    - name: renderer-config
+      mountPath: /usr/src/app/config.json
+      subPath: renderer-config.json
+      configMap: image-renderer-config
+  extraSecretMounts:
+    - name: renderer-certificate
+      mountPath: /usr/src/app/certs/
+      secretName: image-renderer-certificate
+      readOnly: true
+
+extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: image-renderer-config
+    data:
+      renderer-config.json: REPLACE_ME
+        {
+          "service": REPLACE_ME
+            "host": REPLACE_ME
+            "port": REPLACE_ME
+            "protocol": "http",
+            "certFile": "",
+            "certKey": "",
+
+            "metrics": REPLACE_ME
+              "enabled": REPLACE_ME
+              "collectDefaultMetrics": REPLACE_ME
+              "requestDurationBuckets": REPLACE_ME
+            },
+
+            "logging": REPLACE_ME
+              "level": "info",
+              "console": REPLACE_ME
+                "json": REPLACE_ME
+                "colorize": REPLACE_ME
+              }
+            },
+
+            "security": REPLACE_ME
+              "authToken": "REPLACE_ME"
+            }
+          },
+          "rendering": REPLACE_ME
+            "chromeBin": REPLACE_ME
+            "args": ["--no-sandbox", "--disable-gpu"],
+            "ignoresHttpsErrors": REPLACE_ME
+
+            "timezone": REPLACE_ME
+            "acceptLanguage": REPLACE_ME
+            "width": REPLACE_ME
+            "height": REPLACE_ME
+            "deviceScaleFactor": REPLACE_ME
+            "maxWidth": REPLACE_ME
+            "maxHeight": REPLACE_ME
+            "maxDeviceScaleFactor": REPLACE_ME
+            "pageZoomLevel": REPLACE_ME
+            "headed": REPLACE_ME
+
+            "mode": "default",
+            "emulateNetworkConditions": REPLACE_ME
+            "clustering": REPLACE_ME
+              "monitor": REPLACE_ME
+              "mode": "browser",
+              "maxConcurrency": REPLACE_ME
+              "timeout": REPLACE_ME
+            },
+
+            "verboseLogging": REPLACE_ME
+            "dumpio": REPLACE_ME
+            "timingMetrics": REPLACE_ME
+          }
+        }
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: image-renderer-certificate
+    type: Opaque
+    data:
+      # Decodes to 'PLACEHOLDER CERTIFICATE'
+      not-a-real-certificate: REPLACE_ME

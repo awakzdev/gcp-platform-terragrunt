@@ -1,0 +1,125 @@
+global:
+  nodeSelector:
+    workload: infra
+configs:
+  params:
+    server.insecure: true
+  rbac:
+    policy.default: "role:authenticated"
+    policy.csv: |
+      p, role:authenticated, applications, get, *, deny
+      p, role:authenticated, clusters, get, *, deny
+      p, role:authenticated, repositories, get, *, deny
+      p, role:authenticated, projects, get, *, deny
+
+      p, role:admin, applications, *, *, allow
+      p, role:admin, clusters, get, *, allow
+      p, role:admin, repositories, *, *, allow
+      p, role:admin, projects, *, *, allow
+      g, example.com, role:admin
+
+      p, role:readonly, applications, get, *, allow
+      p, role:readonly, applications, sync, *, allow
+      p, role:readonly, clusters, get, *, allow
+      p, role:readonly, repositories, get, *, allow
+      p, role:readonly, projects, get, *, allow
+      g, user@example.com, role:readonly
+
+      p, role:deny, *, *, *, deny
+    scopes: "[groups, email]"
+  cm:
+    url: "https://example.com"
+    dex.config: |
+      connectors:
+      - config:
+          issuer: https://accounts.google.com
+          redirectURI: https://example.com/api/dex/callback
+          clientID: 000000000000-cqob7kt1dp164gqm7712976ckmt4l96l.apps.googleusercontent.com
+          clientSecret: REPLACE_ME
+          serviceAccountFilePath: /tmp/oidc/googleAuth.json
+          domainToAdminEmail:
+            example.com: user@example.com
+        type: google
+        id: google
+        name: Google
+applicationSet:
+  service:
+    annotations:
+        cloud.google.com/neg: '{"ingress": true}'
+  webhook:
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      annotations:
+        cert-manager.io/cluster-issuer: le-prod
+        kubernetes.io/tls-acme: "true"
+      hosts:
+        - example.com
+      paths:
+        - /api/webhook
+      pathType: Prefix
+      tls:
+        - secretName: argocd-applicationset-cert
+          hosts:
+            - example.com
+        
+    
+server:
+  containerPorts:
+    server: 8080
+  service:
+    type: ClusterIP   
+    annotations:
+      cloud.google.com/neg: '{"ingress": true}'
+      cloud.google.com/backend-config: '{"ports": {"http":"cluster-argo-cd-argocd-server"}}'
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: gce
+      kubernetes.io/tls-acme: "true"
+      networking.gke.io/v1beta1.FrontendConfig: "cluster-argo-cd-argocd-server"
+      networking.gke.io/managed-certificates: cluster-argo-cd-argocd-server
+    hosts:
+      - example.com
+    paths:
+      - /*
+    pathType: ImplementationSpecific
+  GKEmanagedCertificate:
+    # -- Enable ManagedCertificate custom resource for Google Kubernetes Engine.
+    enabled: true
+    # -- Domains for the Google Managed Certificate
+    domains:
+      - example.com
+  GKEbackendConfig:
+    # -- Enable BackendConfig custom resource for Google Kubernetes Engine
+    enabled: true
+    # -- [BackendConfigSpec]
+    spec:
+      healthCheck:
+        checkIntervalSec: 30
+        timeoutSec: 5
+        healthyThreshold: 1
+        unhealthyThreshold: 2
+        type: HTTP
+        requestPath: /healthz
+        port: 8080
+  GKEfrontendConfig:
+    # -- Enable FrontConfig custom resource for Google Kubernetes Engine
+    enabled: true
+    # -- [FrontendConfigSpec]
+    spec:
+      redirectToHttps:
+        enabled: true
+        responseCodeName: "301"
+      sslPolicy: date-ssl-policy
+
+dex:
+  volumeMounts:
+    - mountPath: /tmp/oidc
+      name: google-json
+      readOnly: true
+  volumes:
+    - name: google-json
+      secret:
+        defaultMode: 420
+        secretName: argocd-google-groups-json

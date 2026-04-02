@@ -1,0 +1,16 @@
+{{- range $k, $v := .Values.storageClass }}
+{{- if $v.enabled }}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ $k }}
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: {{ $v.type}}
+  fstype: {{ $v.fstype }}
+volumeBindingMode: {{ $v.volumeBindingMode }}
+reclaimPolicy: {{ $v.reclaimPolicy }}
+allowVolumeExpansion: {{ $v.allowVolumeExpansion }}
+{{- end }}
+{{- end }}

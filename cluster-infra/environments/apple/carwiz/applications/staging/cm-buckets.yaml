@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: buckets
+  labels:
+    environment: apple
+data: 
+  order_verification_bucket_name: "REPLACE_ME"
+  order_verification_folder_name: "REPLACE_ME"

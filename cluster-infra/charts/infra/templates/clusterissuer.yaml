@@ -1,0 +1,28 @@
+{{- with .Values.apps.certManager.clusterIssuers }}
+{{ if .enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ default "le-prod" .name }}
+  namespace: {{ default $.Values.apps.certManager.namespace .namespaceOverride }}
+spec:
+  acme:
+    email: {{ required "An email address is required for issuer configuration" .email }}
+    server: {{default "https://acme-v02.api.letsencrypt.org/directory" .server }}
+    privateKeySecretRef:
+      name: {{default "le-prod-issuer-account-key" .privateKeySecretRef }}
+    solvers:
+    {{- with .solvers }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- if .gceIntegration.enabled }}
+      - dns01:
+          cloudDNS:
+            project: {{ default $.Values.defaultGcpProject .gceIntegration.projectOverride }}
+        {{- with .gceIntegration.selector}}
+        selector:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

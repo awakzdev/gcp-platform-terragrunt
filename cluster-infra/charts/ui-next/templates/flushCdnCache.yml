@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-flush-cdn-cache
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "4"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      serviceAccountName: {{ include "ui-next.serviceAccountName" . }}
+      containers:
+        - name: flush-cdn-cache
+          image: google/cloud-sdk:latest
+          command: ["sh", "-c", "sh /scripts/invalidate_cdn_cache.sh"]
+          volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+      restartPolicy: OnFailure
+      volumes:
+        - name: script-volume
+          configMap:
+            name: {{ .Release.Name }}-invalidate-cdn-cache-script
+  backoffLimit: 4

@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-redis-clear-cache-job
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: redis-clear-cache
+        image: redis
+        command: ["/bin/sh","-c"]
+        args: ["redis-cli -h $REDIS_HOST -p $REDIS_PORT FLUSHALL"]
+        env:
+        - name: REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: ui
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              name: ui
+              key: REDIS_PORT
+      restartPolicy: Never
+  backoffLimit: 4

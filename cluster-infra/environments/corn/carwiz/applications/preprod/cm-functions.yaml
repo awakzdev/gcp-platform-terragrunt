@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: functions
+  labels:
+    environment: corn
+
+data:
+  generate_user_recommendations_on_demand: "REPLACE_ME"
+  fast_check_http: "REPLACE_ME"
+  generate_signed_url_secured_url : "REPLACE_ME"
+  car_post_views : "REPLACE_ME"

@@ -1,0 +1,19 @@
+nodeSelector: 
+  workload: builder
+
+# This should be set from commandline on first run to create the secret for the gitlab runner
+# After which if the secret already exists, it will not be updated unless forceSecretUpdate is set to true
+gitlabRunnerRegistrationSecretValue: "GR13489419x-PzzvFWpfxmbWF_m2z"
+forceSecretUpdate: true
+
+gitlab:
+  rbac:
+    create: true
+    serviceAccountAnnotations:
+      iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+  runners:
+    name: "apple-gitlab-runner"
+    tags: "apple"
+    privileged: true
+  nodeSelector:
+    workload: builder

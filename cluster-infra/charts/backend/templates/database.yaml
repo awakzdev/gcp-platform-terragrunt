@@ -1,0 +1,11 @@
+{{- if .Values.cnrmDatabase.enabled }}
+apiVersion: sql.cnrm.cloud.google.com/v1beta1
+kind: SQLDatabase
+metadata:
+  labels:
+{{- toYaml .Values.cnrmDatabase.labels | nindent 4 }}
+  name: {{ .Values.cnrmDatabase.name }}
+spec:
+  instanceRef:
+    external: {{- .Values.cnrmDatabase.instanceName }}
+{{- end }}

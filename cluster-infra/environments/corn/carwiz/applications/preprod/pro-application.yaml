@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: corn-pro
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: pro=registry.gitlab.com/mycompany/pro:^preprod-.{8}$
+    argocd-image-updater.argoproj.io/pro.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/pro.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/pro.allow-tags: regexp:^preprod-.{8}$
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/pro
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/corn/mycompany/applications/preprod/pro-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

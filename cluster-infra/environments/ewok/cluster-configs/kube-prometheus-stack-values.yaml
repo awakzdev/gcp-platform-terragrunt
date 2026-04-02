@@ -1,0 +1,166 @@
+kube-prometheus-stack:
+
+  grafana:
+    enabled: true
+    defaultDashboardsTimezone: Asia/Jerusalem
+
+    #adminPassword: REPLACE_ME
+    admin:
+      ## Name of the secret. Can be templated.
+      existingSecret: "REPLACE_ME"
+      # userKey: adminPassword
+      passwordKey: adminPassword
+
+    podAnnotations:
+      argocd.prevent-out-of-sync/reloader: placeholder
+      reloader.stakater.com/auto: 'true'
+
+    sidecar:
+      dashboards:
+        folderAnnotation: folder
+        provider:
+          foldersFromFilesStructure: true
+        # watchMethod: SLEEP
+
+    ingress:
+      enabled: enabled
+      hosts:
+        - example.com
+      annotations:
+        networking.gke.io/managed-certificates: "grafana-ewok"
+
+      # tls:
+      # - secretName: REPLACE_ME
+
+    plugins:
+      - fifemon-graphql-datasource
+
+    envFromSecrets:
+      - name: prod-grafana
+        optional: true
+      - name: prod-grafana-priv-key
+        optional: true
+
+
+    env:
+      PROJECT_ID: my-gcp-project-id
+    #  POSTGRES_PASSWORD: REPLACE_ME
+#      "POSTGRES_URL": "10.0.0.0/16:5432"
+      POSTGRES_USER: authenticator
+#      "INFLUX_URL": "https://example.com"
+    #  "INFLUX_TOKEN": REPLACE_ME
+      GRAPHQL_URL: "https://example.com/api/data/graphql"
+    #  "OAUTH_CLIENT_ID": "000000000000-9c4flra2qc0eg79q60ntalipvf4b72fv.apps.googleusercontent.com"
+    #  "OAUTH_SECERT": "REPLACE_ME"
+#      OAUTH_DOMAINS: "example.com example.com"
+      SMTP_HOST: "smtp.gmail.com:587"
+#      "SMTP_MAIL": "user@example.com"
+#      "SMTP_PWD": REPLACE_ME
+#      "DOMAIN_NAME": "example.com"
+#      PRIVATE_KEY: REPLACE_ME
+
+    ## Configure additional grafana datasources (passed through tpl)
+    ## ref: http://docs.grafana.org/administration/provisioning/#datasources
+    additionalDataSources:
+
+    - name: Postgres
+      uid: postgres
+      type: postgres
+      database: postgres # name of your database
+      editable: true
+      jsonData:
+        connMaxLifetime: 14400
+        maxIdleConns: 2
+        maxOpenConns: 0
+        postgresVersion: 1400
+        sslmode: disable
+        timescaledb: false
+      secureJsonData:
+        password: REPLACE_ME# password of your user
+      url: ${POSTGRES_URL} #change to url of your postgres instance
+      user: ${POSTGRES_USER} # user to access your database
+
+    - name: InfluxDB
+      type: influxdb
+      uid: influxdb
+      access: proxy
+      editable: true
+      url: ${INFLUX_URL}
+  # when installed in monitoring namespace change the namespace to reflect the namespace
+      secureJsonData:
+        token: REPLACE_ME
+      jsonData:
+        version: Flux
+        organization: primary
+        defaultBucket: primary
+        tlsSkipVerify: true
+
+    - name: Google Cloud Monitoring
+      type: stackdriver
+      uid: google
+      access: proxy
+      editable: true
+      jsonData:
+        tokenUri: https://oauth2.googleapis.com/token
+        clientEmail: grafana@${PROJECT_ID}.iam.gserviceaccount.com
+        authenticationType: jwt
+        defaultProject: ${PROJECT_ID}
+      secureJsonData:
+        privateKey: REPLACE_ME
+
+    - name: GraphQL Data Source
+      type: fifemon-graphql-datasource
+      uid: graphql
+      access: proxy
+      editable: true
+      url: ${GRAPHQL_URL}
+
+    grafana.ini:
+      users:
+        auto_assign_org_role: "Admin"
+
+      server:
+        domain: "{{ if (and .Values.ingress.enabled .Values.ingress.hosts) }}{{ .Values.ingress.hosts | first }}{{ else }}''{{ end }}"
+        root_url: "https://%(domain)s/"
+
+      auth.google:
+        enabled: "true"
+        client_id: "${OAUTH_CLIENT_ID}"
+        client_secret: REPLACE_ME
+        scopes: https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
+        auth_url: https://accounts.google.com/o/oauth2/auth
+        token_url: https://accounts.google.com/o/oauth2/token
+        allowed_domains: ${OAUTH_DOMAINS}
+        allow_sign_up: "true"
+        editors_can_admin: "true"
+
+      smtp:
+        enabled: "true"
+        host: ${SMTP_HOST}
+        user: ${SMTP_MAIL}
+        password: REPLACE_ME
+        ;cert_file:
+        ;key_file:
+        skip_verify: "true"
+        from_address: ${SMTP_MAIL}
+        from_name: Grafana Production
+         # EHLO identity in SMTP dialog (defaults to instance_name)
+        ;ehlo_identity: ${DOMAIN_NAME}
+
+nodeSelector:
+  workload: infra
+
+
+influxdb:
+  ingress:
+    enabled: enabled
+    pathType: ImplementationSpecific
+    apiVersion: ""
+    hostname: example.com
+    path: /
+    annotations: 
+      networking.gke.io/managed-certificates: "influxdb-ewok"
+    ingressClassName: ""
+  influxdb:
+    nodeSelector:
+      workload: infra

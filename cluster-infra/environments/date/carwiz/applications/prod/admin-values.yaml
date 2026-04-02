@@ -1,0 +1,87 @@
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/mycompany/admin
+  pullPolicy: Always
+  tag: "master-81b00154"
+
+imagePullSecrets:
+  - name: "regcred"
+
+GKEmanagedCertificate:
+  enabled: true
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    logging:
+      enable: true
+      sampleRate: 1.0
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /health
+      port: 80
+    cdn:
+      cacheMode: CACHE_ALL_STATIC
+      clientTtl: 300
+      defaultTtl: 300
+      enabled: true
+      maxTtl: 86400
+      negativeCaching: true
+
+env:
+  - name: NGINX_PORT
+    value: "80"
+  - name: REACT_APP_UI_URL
+    value: "https://example.com"
+  - name: REACT_APP_IMAGEKIT_AUTH_ENDPOINT
+    value: "https://example.com/api/data/imagekit-auth"
+  - name: REACT_APP_IMAGEKIT_URL
+    value: "https://ik.imagekit.io/mycompany"
+  - name: REACT_APP_GOOGLE_MAPS_API_KEY
+    value: "REPLACE_ME"
+  - name: REACT_APP_FILTERS_VALIDATE_URL
+    value: "https://us-central1-mycompany-97e29.cloudfunctions.net/date-fetch_custom_insights/validate_filters"
+  - name: REACT_APP_IMAGEKIT_PUBLIC_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: REACT_APP_IMAGEKIT_PUBLIC_KEY
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+    # kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "date-frontend-config"
+  hosts:
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: example.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector:
+  workload: application

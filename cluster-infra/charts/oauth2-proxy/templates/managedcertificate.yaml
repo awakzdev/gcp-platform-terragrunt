@@ -1,0 +1,11 @@
+{{- if .Values.GKEmanagedCertificate.enabled -}}
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ include "oauth2-proxy.fullname" . }}-managed-cert
+spec:
+  domains:
+  {{- range $v := .Values.ingress.hosts }}
+    - {{ $v }}
+  {{- end }}
+{{- end }}

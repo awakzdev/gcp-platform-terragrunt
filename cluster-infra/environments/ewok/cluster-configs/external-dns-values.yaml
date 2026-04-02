@@ -1,0 +1,19 @@
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+  name: "external-dns"
+
+sources:
+  - service
+  - ingress
+
+policy: sync
+
+domainFilters: 
+  - example.com
+
+provider: google
+
+nodeSelector:
+  workload: infra

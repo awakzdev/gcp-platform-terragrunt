@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: admin=registry.gitlab.com/mycompany/admin:^staging-.{8}$
+    argocd-image-updater.argoproj.io/admin.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/admin.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/admin.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/admin.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/admin.allow-tags: regexp:^staging-.{8}$
+  name: apple-admin
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/admin
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/apple/mycompany/applications/staging/admin-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=registry.gitlab.com/mycompany/backend:^master-.{8}$, migrations=registry.gitlab.com/mycompany/backend:^master-.{8}-migrations$
+    argocd-image-updater.argoproj.io/backend.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/migrations.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/migrations.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/backend.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/backend.allow-tags: regexp:^master-.{8}$
+    argocd-image-updater.argoproj.io/migrations.helm.image-name: migrations.image.repository
+    argocd-image-updater.argoproj.io/migrations.helm.image-tag: migrations.image.tag
+    argocd-image-updater.argoproj.io/migrations.allow-tags: regexp:^master-.{8}-migrations$
+  name: date-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/backend
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/date/mycompany/applications/prod/backend-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

@@ -1,0 +1,159 @@
+## Override the deployment namespace
+##
+namespaceOverride: ""
+
+# Force the target Kubernetes version (it uses Helm `.Capabilities` if not set).
+# This is especially useful for `helm template` as capabilities are always empty
+# due to the fact that it doesn't query an actual cluster
+kubeVersion:
+
+# Oauth client configuration specifics
+config:
+  # Add config annotations
+  annotations: {}
+  # OAuth client ID
+  clientID: "000000000000-tc5r5982lt6hgamru2cr5gt69ga2intc.apps.googleusercontent.com"
+  # OAuth client secret
+  clientSecret: "REPLACE_ME"
+  # Create a new secret with the following command
+  # openssl rand -base64 32 | head -c 32 | base64
+  # Use an existing secret for OAuth2 credentials (see secret.yaml for required fields)
+  # Example:
+  # existingSecret: REPLACE_ME
+  cookieSecret: "REPLACE_ME"
+  # The name of the cookie that oauth2-proxy will create
+  # If left empty, it will default to the release name
+  cookieName: ""
+  google: {}
+    # adminEmail: xxxx
+    # useApplicationDefaultCredentials: true
+    # targetPrincipal: xxxx
+    # serviceAccountJson: xxxx
+    # Alternatively, use an existing secret (see google-secret.yaml for required fields)
+    # Example:
+    # existingSecret: REPLACE_ME
+    # groups: []
+    # Example:
+    #  - group1@example.com
+    #  - group2@example.com
+  # Default configuration, to be overridden
+  configFile: |-
+    email_domains = [ "example.com" ]
+    upstreams = [ "file:///dev/null" ]
+    cookie_domains = [ ".example.com",".example.com",".example.com" ]
+    whitelist_domains = [ ".example.com", ".example.com",".example.com" ]
+    set_authorization_header = true
+    pass_authorization_header = true
+  # Custom configuration file: oauth2_proxy.cfg
+  # configFile: |-
+  #   pass_basic_auth = false
+  #   pass_access_token = true
+  # Use an existing config map (see configmap.yaml for required fields)
+  # Example:
+  # existingConfig: config
+
+image:
+  repository: "quay.io/oauth2-proxy/oauth2-proxy"
+  # appVersion is used by default
+  tag: ""
+  pullPolicy: "IfNotPresent"
+
+# Optionally specify an array of imagePullSecrets.
+# Secrets must be manually created in the namespace.
+# ref: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+# imagePullSecrets:
+  # - name: myRegistryKeySecretName
+
+# Set a custom containerPort if required.
+# This will default to 4180 if this value is not set and the httpScheme set to http
+# This will default to 4443 if this value is not set and the httpScheme set to https
+# containerPort: 4180
+
+extraArgs: {}
+extraEnv: []
+
+# -- Custom labels to add into metadata
+customLabels: {}
+
+# To authorize individual email addresses
+# That is part of extraArgs but since this needs special treatment we need to do a separate section
+authenticatedEmailsFile:
+  enabled: false
+  # Defines how the email addresses file will be projected, via a configmap or secret
+  persistence: configmap
+  # template is the name of the configmap what contains the email user list but has been configured without this chart.
+  # It's a simpler way to maintain only one configmap (user list) instead changing it for each oauth2-proxy service.
+  # Be aware the value name in the extern config map in data needs to be named to "restricted_user_access" or to the
+  # provided value in restrictedUserAccessKey field.
+  template: ""
+  # The configmap/secret key under which the list of email access is stored
+  # Defaults to "restricted_user_access" if not filled-in, but can be overridden to allow flexibility
+  restrictedUserAccessKey: ""
+  # One email per line
+  # example:
+  # restricted_access: |-
+  #   name1@domain
+  #   name2@domain
+  # If you override the config with restricted_access it will configure a user list within this chart what takes care of the
+  # config map resource.
+  restricted_access: ""
+  annotations: {}
+  # helm.sh/resource-policy: keep
+
+service:
+  type: ClusterIP
+  portNumber: 80
+  appProtocol: http
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+
+## Create or use ServiceAccount
+serviceAccount:
+  ## Specifies whether a ServiceAccount should be created
+  enabled: true
+  ## The name of the ServiceAccount to use.
+  ## If not set and create is true, a name is generated using the fullname template
+  name: oauth2-proxy 
+  automountServiceAccountToken: true
+  annotations:
+    iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+
+GKEmanagedCertificate:
+  enabled: true
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/tls-acme: "true"
+    networking.gke.io/v1beta1.FrontendConfig: "date-frontend-config"
+    networking.gke.io/managed-certificates: oauth2-proxy-argocd-server
+  hosts:
+    - example.com
+  path: /*
+  pathType: ImplementationSpecific 
+
+resources:
+  limits:
+    memory: 300Mi
+  requests:
+    cpu: 100m
+    memory: 300Mi
+
+# Node labels for pod assignment
+# Ref: https://kubernetes.io/docs/user-guide/node-selection/
+nodeSelector:
+  workload: infra
+
+# Additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -B" for bcrypt encryption.
+# Alternatively supply an existing secret which contains the required information.
+htpasswdFile:
+  enabled: true
+  existingSecret: ""
+  entries:
+   - testuser:REPLACE_ME
+
+
+
+
+

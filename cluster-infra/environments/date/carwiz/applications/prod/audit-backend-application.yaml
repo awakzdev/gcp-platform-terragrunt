@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: audit-backend=registry.gitlab.com/mycompany/audit-backend:^main-.{8}$
+    argocd-image-updater.argoproj.io/audit-backend.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/audit-backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/audit-backend.allow-tags: regexp:^main-.{8}$
+  name: date-audit-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/audit-backend
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/date/mycompany/applications/prod/audit-backend-values.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}

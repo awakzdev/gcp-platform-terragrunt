@@ -1,0 +1,106 @@
+replicaCount: 1
+
+serviceAccount:
+  create: false
+  annotations:
+    iam.gke.io/gcp-service-account: service-account@my-gcp-project-id.iam.gserviceaccount.com
+  name: "apple-ui"
+
+GKEmanagedCertificate:
+  enabled: false
+
+gceBackendConfig:
+  enabled: true
+  spec:
+    customResponseHeaders:
+      headers:
+      - "Access-Control-Allow-Origin:*"
+      - "Access-Control-Allow-Methods:GET, POST, OPTIONS"
+      - "Access-Control-Allow-Headers:DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+      - "Access-Control-Expose-Headers:Content-Length,Content-Range"
+    logging:
+      enable: true
+      sampleRate: 1.0
+    healthCheck:
+      checkIntervalSec: 30
+      timeoutSec: 5
+      healthyThreshold: 1
+      unhealthyThreshold: 2
+      type: HTTP
+      requestPath: /health
+      port: 80
+    cdn:
+      enabled: true
+      cacheMode: CACHE_ALL_STATIC
+      clientTtl: 3600
+      defaultTtl: 3600
+      maxTtl: 86400
+      negativeCaching: true
+
+env:
+  - name: SCHEMA
+    value: "mycompany"
+  - name: PORT
+    value: "3000"
+  - name: NEXT_PUBLIC_API_BASE_URL
+    value: https://example.com/api
+  - name: NEXT_PUBLIC_IMAGEKIT_URL
+    value: https://example.com/staging
+  - name: GRAPHQL_SYSTEM_USER_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: GRAPHQL_SYSTEM_USER_KEY
+  # - name: REDIS_HOST
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: redis
+  #       key: REDIS_HOST
+  # - name: REDIS_PORT
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: redis
+  #       key: REDIS_PORT
+  - name: EVENTS_BQ_TABLE
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: EVENTS_BQ_TABLE
+  - name: EVENTS_BQ_DATASET
+    valueFrom:
+      secretKeyRef:
+        name: ui
+        key: EVENTS_BQ_DATASET
+  - name: MY_LOCATION_ENC_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend
+        key: MY_LOCATION_ENC_KEY
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    cloud.google.com/backend-config: '{"default": "apple-backend-config"}'
+    cloud.google.com/neg: '{"ingress": true}'
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: le-prod
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/auth-signin: https://example.com/oauth2/start?rd=$scheme://$best_http_host$request_uri
+    nginx.ingress.kubernetes.io/auth-url: https://example.com/oauth2/auth
+
+
+resources:
+  limits:
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 2Gi
+
+nodeSelector:
+  workload: application

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ui-next.fullname" . }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+  labels:
+    {{- include "ui-next.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "ui-next.selectorLabels" . | nindent 4 }}

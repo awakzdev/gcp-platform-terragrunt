@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: my-gcp-project-id=registry.gitlab.com/mycompany/carwizx:^main-.{8}$
+    argocd-image-updater.argoproj.io/my-gcp-project-id.pull-secret: REPLACE_ME
+    argocd-image-updater.argoproj.io/my-gcp-project-id.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/my-gcp-project-id.allow-tags: regexp:^main-.{8}$
+  name: date-mycompany-x
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://gitlab.com/mycompany/iac/cluster-infra.git'
+    path: charts/my-gcp-project-id
+    targetRevision: dev
+    helm:
+      valueFiles:
+        - '../../environments/date/mycompany/applications/prod/my-gcp-project-id.yaml'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: mycompany
+  syncPolicy:
+    automated: {}
